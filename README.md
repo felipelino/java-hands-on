@@ -258,7 +258,7 @@ File used when running unit tests:
     <root level="${logLevel:-INFO}">
         <appender-ref ref="STDOUT"/>
     </root>
-</configuration>
+</configuration>cd .
 ```
 
 ## Actuator Endpoints
@@ -274,3 +274,4 @@ management.endpoint.health.show-details=always
 management.info.defaults.enabled=true
 management.info.git.mode=full
 ```
+

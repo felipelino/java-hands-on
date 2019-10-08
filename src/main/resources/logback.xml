@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="STDOUT-ERROR" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>${logStdOutLevel:-WARN}</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{1} - %msg%n
+            </Pattern>
+        </layout>
+    </appender>
+    <appender name="FILE-JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logFilePath:-logs}/${logFileName:-application}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${logFilePath:-logs}/${logFileName:-application}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>20MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>100MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <fieldName>Timestamp</fieldName>
+                    <pattern>yyyy-MM-dd'T'HH:mm:ss.SSSZZ</pattern>
+                </timestamp>
+                <logstashMarkers></logstashMarkers>
+                <arguments></arguments>
+                <!-- provides the fields in the configured pattern -->
+                <pattern>
+                    <!-- the pattern that defines what to include -->
+                    <pattern>
+                        {
+                        "EventSeverity": "%level",
+                        "Thread": "%thread",
+                        "Logger": "%logger",
+                        "HostName": "${HOSTNAME}",
+                        "Message":  "%msg"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+    <appender name="ASYNC-JSON" class="net.logstash.logback.appender.LoggingEventAsyncDisruptorAppender">
+        <appender-ref ref="${logAppender:-FILE-JSON}" />
+    </appender>
+    <root level="${logLevel:-INFO}">
+        <appender-ref ref="ASYNC-JSON" />
+        <appender-ref ref="STDOUT-ERROR" />
+    </root>
+</configuration>
