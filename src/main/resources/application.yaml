@@ -1,0 +1,24 @@
+spring.cloud.stream.kafka.binder:
+  brokers: localhost
+  defaultBrokerPort: 9092
+  configuration.commit.interval.ms: 1000
+  requiredAcks: 1
+  autoCreateTopics: true
+  autoAddPartitions: true
+spring.cloud.stream.bindings.person-in:
+  destination: person-input-topic
+  group: handsonapp
+  contentType: application/json
+  consumer:
+    partitioned: true
+    concurrency: 2
+    autoRebalanceEnabled: true
+    autoCommitOffset: true
+    startOffset: earliest
+    max-attempts: 3
+
+
+spring.data.cassandra:
+  contact-points: localhost
+  port: 9042
+  keyspace-name: mykeyspace
