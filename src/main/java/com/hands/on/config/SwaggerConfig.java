@@ -27,6 +27,6 @@ public class SwaggerConfig {
 
     private ApiInfo metaData() {
         return new ApiInfoBuilder()
-                .title("REST API ").description("\"REST API for Amazing Service\"").version("v1").build();
+                .title("REST API ").description("\"REST API for an Amazing Service\"").version("v1").build();
     }
 }

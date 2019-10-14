@@ -6,7 +6,7 @@ spring.cloud.stream.kafka.binder:
   autoCreateTopics: true
   autoAddPartitions: true
 spring.cloud.stream.bindings.person-in:
-  destination: person-input-topic
+  destination: person-topic
   group: handsonapp
   contentType: application/json
   consumer:
@@ -16,7 +16,6 @@ spring.cloud.stream.bindings.person-in:
     autoCommitOffset: true
     startOffset: earliest
     max-attempts: 3
-
 
 spring.data.cassandra:
   contact-points: localhost
