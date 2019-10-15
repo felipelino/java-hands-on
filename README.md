@@ -19,11 +19,11 @@
 
 # Application Overview
 
-0. Receive a model by REST API OR receive from a Kafka Topic
-0. Listen to the Kafka Topic
-0. Persist the data in Cassandra
-0. Allow Get from the REST API 
-0. Documentation exposed by Swagger
+1. Receive a model by REST API OR receive from a Kafka Topic
+1. Listen to the Kafka Topic
+1. Persist the data in Cassandra
+1. Allow Get from the REST API 
+1. Documentation exposed by Swagger
 
 # Steps
 
@@ -89,8 +89,8 @@ docker-compose -f .\docker-compose.yml up -d
 
 ## Prepare database
    
-0. Execute the command: `docker exec -it cassandra_custom cqlsh`   
-0. Copy and Paste the following CQL Script   
+1. Execute the command: `docker exec -it cassandra_custom cqlsh`   
+1. Copy and Paste the following CQL Script   
 ```cql
 CREATE KEYSPACE mykeyspace WITH REPLICATION = {
    'class' : 'NetworkTopologyStrategy',
@@ -105,6 +105,8 @@ CREATE TABLE IF NOT EXISTS mykeyspace.person (
     PRIMARY KEY ((email))
 ) WITH compaction = { 'class' :  'LeveledCompactionStrategy'  };
 ```
+
+*Tip*: Add 2 CQL scripts one to create the Keyspace and other to create the table in the folder `src/main/resources/cql` so you can use them in integration tests.
 
 ## Spring Boot Initializer
 
@@ -318,7 +320,7 @@ By default many things happen as:
 * Tomcat Server to run your application
 * Port is 8080
 * Load automatically dependencies when is found in classpath: Cassandra, MongoDB, Kafka, among others
-* But, you can override all the things as yoy wish
+* But, you can override all the things as you wish
 
 ## Spring Framework
 
@@ -746,8 +748,12 @@ public class HandsOnApplicationTests {
 				.build();
 		// Connect and execute CQL Script
 		Session session = cluster.connect();
+
+        // CQL to create Keyspace
 		String cqlScript1 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_keyspace.cql")));
 		session.execute(cqlScript1);
+    
+        // CQL to create table
 		String cqlScript2 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_table.cql")));
 		session.execute(cqlScript2);
 	}
@@ -831,11 +837,11 @@ ___
 
 # Pack, Deliver and Run
 
-0. `mvn clean package`
-0. `java -jar target\hands-on-0.0.1-SNAPSHOT.jar`
-0. Check if application booted in: `http://localhost:8080/actuator/info` , should return HTTP 200 with a JSON.
-0. You can access the Swagger Documentation `http://localhost:8080/swagger-ui.html`
-0. POST and GET a sample
+1. `mvn clean package`
+1. `java -jar target\hands-on-0.0.1-SNAPSHOT.jar`
+1. Check if application booted in: `http://localhost:8080/actuator/info` , should return HTTP 200 with a JSON.
+1. You can access the Swagger Documentation `http://localhost:8080/swagger-ui.html`
+1. POST and GET a sample
 ```shell script
 curl -v -X POST 'http://localhost:8080/api/person' -H 'Content-Type: application/json' -d '{"email": "james.watt@gmail.com", "firstName": "James", "lastName": "Watt", "yearBirth": 1736}'
 curl -v -X GET 'http://localhost:8080/api/person?email=james.watt@gmail.com' -H 'accept: application/json'
