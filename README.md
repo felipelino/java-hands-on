@@ -106,8 +106,6 @@ CREATE TABLE IF NOT EXISTS mykeyspace.person (
 ) WITH compaction = { 'class' :  'LeveledCompactionStrategy'  };
 ```
 
-*Tip*: Add 2 CQL scripts one to create the Keyspace and other to create the table in the folder `src/main/resources/cql` so you can use them in integration tests.
-
 ## Spring Boot Initializer
 
 * [Search 'Spring boot initializer' in Google](https://lmgtfy.com/?q=Spring+Boot+Initializer)
@@ -128,11 +126,14 @@ CREATE TABLE IF NOT EXISTS mykeyspace.person (
 * `Open as Project` with IntelliJ selecting the `pom.xml`
 * Optionally you can set to download dependencies automatically when pom is updated.
 * Run the class with annotation `@SpringBootApplication` as a Main application.
+* If fail comment dependency spring-cloud-stream in `pom.xml`
 * If everything is OK in output log will appear:
 ```
 Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
 ```
 * Stop application
+
+*Tip*: Add the two previous CQL scripts to create the Keyspace and other to create the table in the folder `src/main/resources/cql` so you can use them in integration tests.
 
 ## About Maven and Edit POM
 
@@ -152,7 +153,8 @@ Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
 
 #### Other Dependencies
 
-* [Springfox Swagger and springfox-swagger2](https://springfox.github.io/springfox/docs/current/#springfox-swagger-ui): To expose our REST API in a friendly view 
+* [Springfox Swagger](https://springfox.github.io/springfox/docs/current/#springfox-swagger-ui): To expose our REST API in a friendly view 
+* springfox-swagger2
 * [Logback](https://logback.qos.ch/): Library to log
 * [Logstash logback](https://github.com/logstash/logstash-logback-encoder): Library to write log in JSON format compatible with [Logstash](https://www.elastic.co/pt/products/logstash)
 * [Jackson JSON](https://github.com/FasterXML/jackson): Library to parse JSON to Object and vice-versa.
@@ -199,13 +201,26 @@ Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
 ### Plugins
 
 * [spring-boot-maven-plugin](https://docs.spring.io/spring-boot/docs/current/reference/html/build-tool-plugins-maven-plugin.html): Provides Spring Boot support in Maven, letting you package executable jar or war archives and run an application “in-place”. 
-* [git-commit-id-plugin](https://github.com/git-commit-id/maven-git-commit-id-plugin/blob/master/docs/using-the-plugin.md): Show useful information
 
 #### How to Add and Configure Plugin
 
 * Read the documentation about the Plugin. 
 * The documentation normally follow the same pattern.
 * Search plugins that can solve an issue about build, example: generate proto-buf classes based in proto file; automatically change version of a code; run an external command or script
+
+### Folder Structure
+
+Convention over configuration
+
+```
+/src
+    /main
+        /java
+        /resources
+    /test
+        /java
+        /resources
+```
 
 ## Setup Logging
 
@@ -427,7 +442,7 @@ you will find all possibilities to use and configure how the application will wo
 
 ```java
 import org.springframework.data.cassandra.core.mapping.Column;
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
+import org.springframework.data.cassandra.core.mapping.PrimaryKeyColumn;
 import org.springframework.data.cassandra.core.mapping.Table;
 
 @Table("person")
@@ -457,7 +472,7 @@ Everything is convention over configuration. So the method's name tell him to us
 @Repository
 @Component
 public interface PersonRepository extends CrudRepository<Person, String> {
-    List<Person> findByEmail(String email);
+    Person findByEmail(String email);
 }
 ```
 
@@ -860,6 +875,7 @@ The list here is a subset of libraries and guides useful in any project:
 * [Consuming a REST APIs](https://spring.io/guides/gs/consuming-rest/): How to consume REST APIs.
 * [Scheduling Tasks](https://spring.io/guides/gs/scheduling-tasks/): Schedule execution of a method using something like a `cron`.
 * [Spring Retry](https://github.com/spring-projects/spring-retry): How to use spring to retry the execution of a method in case of a specific condition (some errors).
+* [ConditionalOnProperty](https://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/autoconfigure/condition/ConditionalOnProperty.html): Instantiate spring bean conditionally.
  
  ## Separate Unit and Integration Tests
  
