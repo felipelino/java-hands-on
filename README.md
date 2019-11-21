@@ -1,3 +1,4 @@
+
 # Script de Hands On Java
 
 # Objective
@@ -366,23 +367,23 @@ If you try to access the endpoint: `http://localhost:8080/actuator/health`
 Expected return:
 ```json
 {
-	"status": "UP",
-	"details": {
-		"diskSpace": {
-			"status": "UP",
-			"details": {
-				"total": 252839981056,
-				"free": 66116206592,
-				"threshold": 10485760
-			}
-		},
-		"cassandra": {
-			"status": "UP",
-			"details": {
-				"version": "3.11.4"
-			}
-		}
-	}
+    "status": "UP",
+    "details": {
+        "diskSpace": {
+            "status": "UP",
+            "details": {
+                "total": 252839981056,
+                "free": 66116206592,
+                "threshold": 10485760
+            }
+        },
+        "cassandra": {
+            "status": "UP",
+            "details": {
+                "version": "3.11.4"
+            }
+        }
+    }
 }
 ```
 
@@ -738,72 +739,72 @@ spring.data.cassandra.jmx-enabled=false
 @AutoConfigureMockMvc // When application boots the test will instantiate a MockMvc
 @TestPropertySource("classpath:application-test.properties") // Override configuration only for tests
 @RunWith(SpringRunner.class)
-@SpringBootTest	// The application will startup
+@SpringBootTest // The application will startup
 public class HandsOnApplicationTests {
 
-	@Autowired
-	private MockMvc mockMvc; // This object allow us to perform HTTP operations in our application
+    @Autowired
+    private MockMvc mockMvc; // This object allow us to perform HTTP operations in our application
 
-	@Autowired
-	private PersonRepository repository;
+    @Autowired
+    private PersonRepository repository;
 
-	@BeforeClass
-	public static void initCassandra() throws Exception {
-		Properties prop = new Properties();
-		prop.load(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("application-test.properties"));
-		String cassandraHosts = prop.getProperty("spring.data.cassandra.contact-points");
-		String cassandraPort = prop.getProperty("spring.data.cassandra.port");
+    @BeforeClass
+    public static void initCassandra() throws Exception {
+        Properties prop = new Properties();
+        prop.load(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("application-test.properties"));
+        String cassandraHosts = prop.getProperty("spring.data.cassandra.contact-points");
+        String cassandraPort = prop.getProperty("spring.data.cassandra.port");
 
-		// Start Cassanda Unit
-		EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-test.yaml", 20000);
-		Cluster cluster = Cluster.builder()
-				.addContactPoints(cassandraHosts)
-				.withPort(Integer.parseInt(cassandraPort))
-				.withoutJMXReporting()
-				.build();
-		// Connect and execute CQL Script
-		Session session = cluster.connect();
+        // Start Cassanda Unit
+        EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-test.yaml", 20000);
+        Cluster cluster = Cluster.builder()
+                .addContactPoints(cassandraHosts)
+                .withPort(Integer.parseInt(cassandraPort))
+                .withoutJMXReporting()
+                .build();
+        // Connect and execute CQL Script
+        Session session = cluster.connect();
 
         // CQL to create Keyspace
-		String cqlScript1 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_keyspace.cql")));
-		session.execute(cqlScript1);
+        String cqlScript1 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_keyspace.cql")));
+        session.execute(cqlScript1);
     
         // CQL to create table
-		String cqlScript2 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_table.cql")));
-		session.execute(cqlScript2);
-	}
+        String cqlScript2 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_table.cql")));
+        session.execute(cqlScript2);
+    }
 
-	@AfterClass
-	public static void cleanCassandra() throws Exception {
-		EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
-	}
+    @AfterClass
+    public static void cleanCassandra() throws Exception {
+        EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
+    }
 
-	@Test
-	public void postAndGetPerson() throws Exception {
+    @Test
+    public void postAndGetPerson() throws Exception {
 
-		// Prepare
-		String email = "jhon.doe@company.com";
-		Person p = new Person();
-		p.setEmail(email);
-		this.repository.delete(p);
+        // Prepare
+        String email = "jhon.doe@company.com";
+        Person p = new Person();
+        p.setEmail(email);
+        this.repository.delete(p);
 
-		String contentToPost = "{\"email\": \""+email+"\", \"firstName\": \"Jhon\", \"lastName\": \"Doe\", \"yearBirth\": 1975 }";
+        String contentToPost = "{\"email\": \""+email+"\", \"firstName\": \"Jhon\", \"lastName\": \"Doe\", \"yearBirth\": 1975 }";
 
-		// Act/Assert - POST
-		MvcResult mvcResult = this.mockMvc.perform(post("/api/person")
-				.content(contentToPost).contentType("application/json"))
-				.andDo(print())
-				.andExpect(status().isNoContent()).andReturn();
+        // Act/Assert - POST
+        MvcResult mvcResult = this.mockMvc.perform(post("/api/person")
+                .content(contentToPost).contentType("application/json"))
+                .andDo(print())
+                .andExpect(status().isNoContent()).andReturn();
 
-		// Act/Assert - GET
-		mvcResult = this.mockMvc.perform(get("/api/person")
-				.param("email", email)
-				.accept("application/json"))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andExpect(content().json(contentToPost, true))
-				.andReturn();
-	}
+        // Act/Assert - GET
+        mvcResult = this.mockMvc.perform(get("/api/person")
+                .param("email", email)
+                .accept("application/json"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().json(contentToPost, true))
+                .andReturn();
+    }
 }
 ```
 
@@ -815,37 +816,37 @@ Imagine that our topic is public and other applications can publish to it. So ou
 public class HandsOnApplicationTests {
     // ...
 
-	@Autowired
-	@Qualifier(Topics.INPUT)
-	private MessageChannel messageChannel;
+    @Autowired
+    @Qualifier(Topics.INPUT)
+    private MessageChannel messageChannel;
 
-	@Autowired
-	private MessageCollector messageCollector;
+    @Autowired
+    private MessageCollector messageCollector;
 
-	@Autowired
-	private ObjectMapper objectMapper; // The default instance created by Spring
+    @Autowired
+    private ObjectMapper objectMapper; // The default instance created by Spring
 
-	@Test
-	public void publishMessageToChannelAndCheckRepository() throws Exception {
+    @Test
+    public void publishMessageToChannelAndCheckRepository() throws Exception {
 
-		// Prepare
-		String email = "james.watt@company.com";
-		Person p = new Person();
-		p.setEmail(email);
-		this.repository.delete(p);
+        // Prepare
+        String email = "james.watt@company.com";
+        Person p = new Person();
+        p.setEmail(email);
+        this.repository.delete(p);
 
-		String json = "{\"email\": \""+email+"\", \"firstName\": \"James\", \"lastName\": \"Watt\", \"yearBirth\": 1736 }";
-		Message<String> message =  MessageBuilder.withPayload(json).build();
+        String json = "{\"email\": \""+email+"\", \"firstName\": \"James\", \"lastName\": \"Watt\", \"yearBirth\": 1736 }";
+        Message<String> message =  MessageBuilder.withPayload(json).build();
 
-		// Act
-		this.messageChannel.send(message);
+        // Act
+        this.messageChannel.send(message);
 
-		// Assert
-		Person person = this.repository.findByEmail(email);
-		Assert.assertNotNull(person);
-		String jsonFromRepository = this.objectMapper.writeValueAsString(person);
-		JSONAssert.assertEquals(json, jsonFromRepository, true);
-	}
+        // Assert
+        Person person = this.repository.findByEmail(email);
+        Assert.assertNotNull(person);
+        String jsonFromRepository = this.objectMapper.writeValueAsString(person);
+        JSONAssert.assertEquals(json, jsonFromRepository, true);
+    }
 }
 ```
 ___
@@ -880,3 +881,13 @@ The list here is a subset of libraries and guides useful in any project:
  ## Separate Unit and Integration Tests
  
  * [How to Split JUnit Tests in a Continuous Integration Environment](https://semaphoreci.com/community/tutorials/how-to-split-junit-tests-in-a-continuous-integration-environment)
+
+ ___
+
+ # Do it by yourself
+
+ * Add cache to avoid get the same data always going to retrive from cassandra.
+
+ * Force to expire the cache whenever the data is updated
+
+ * Allow to enable/disable Swagger by configuration
