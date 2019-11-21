@@ -225,7 +225,7 @@ Convention over configuration
 
 ## Setup Logging
 
-As sad before we are going to use Logback. If you want know why we choose it among others like: log4j, commons-log; see [Reasons to Switch](http://logback.qos.ch/reasonsToSwitch.html). 
+As said before we are going to use Logback. If you want know why we choose it among others like: log4j, commons-log; see [Reasons to Switch](http://logback.qos.ch/reasonsToSwitch.html). 
 
 *Nice features in our specific configuration:*
 
