@@ -30,7 +30,7 @@
 
 ## External Dependencies
 
-Is out of scope talk about docker. So we are going to have here the `docker-compose.yml` with all dependencies:
+It's out of scope talk about docker. So we are going to have here the `docker-compose.yml` with all dependencies:
 
 * Cassandra
 * Kafka
@@ -115,8 +115,8 @@ CREATE TABLE IF NOT EXISTS mykeyspace.person (
 *Add Spring Dependencies*
 
 * [spring-boot-starter-web](https://www.baeldung.com/spring-boot-starters): Allow application to answer REST HTTP 
-* [Spring Actuator](https://spring.io/guides/gs/actuator-service/): Add endpoints useful to debug application
-* [Spring Cloud Stream](https://spring.io/projects/spring-cloud-stream): To publish and listen kafka topics (or other kind of queues as: Kafka, AWS Kinesis, RabbitMQ)
+* [Spring Actuator](https://spring.io/guides/gs/actuator-service/): Adds endpoints that are useful to monitor or debug your application
+* [Spring Cloud Stream](https://spring.io/projects/spring-cloud-stream): To publish and listen to kafka topics (or other kind of queues as: Kafka, AWS Kinesis, RabbitMQ)
 * [Spring Data Cassandra](https://spring.io/projects/spring-data-cassandra): To access Cassandra
 
 
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS mykeyspace.person (
 * `Open as Project` with IntelliJ selecting the `pom.xml`
 * Optionally you can set to download dependencies automatically when pom is updated.
 * Run the class with annotation `@SpringBootApplication` as a Main application.
-* If fail comment dependency spring-cloud-stream in `pom.xml`
+* If it fails comment dependency spring-cloud-stream in `pom.xml`
 * If everything is OK in output log will appear:
 ```
 Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
@@ -142,7 +142,7 @@ Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
 
 * [Introduction to the Build Lifecycle](http://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html)
 
-> * *validate* - validate the project is correct and all necessary information is available
+> * *validate* - validate if the project is correct and all necessary information is available
 > * *compile* - compile the source code of the project
 > * *test* - test the compiled source code using a suitable unit testing framework. These tests should not require the code be packaged or deployed
 > * *package* - take the compiled code and package it in its distributable format, such as a JAR.
@@ -156,7 +156,7 @@ Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
 
 * [Springfox Swagger](https://springfox.github.io/springfox/docs/current/#springfox-swagger-ui): To expose our REST API in a friendly view 
 * springfox-swagger2
-* [Logback](https://logback.qos.ch/): Library to log
+* [Logback](https://logback.qos.ch/): Logging library
 * [Logstash logback](https://github.com/logstash/logstash-logback-encoder): Library to write log in JSON format compatible with [Logstash](https://www.elastic.co/pt/products/logstash)
 * [Jackson JSON](https://github.com/FasterXML/jackson): Library to parse JSON to Object and vice-versa.
 * [Apache Commons Lang](https://commons.apache.org/proper/commons-lang/): Library with useful methods to manipulate Strings, Collections, Objects
@@ -195,8 +195,8 @@ Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
 </dependency>
 ```
   
-- By default the scope is compile. With the spring-boot plugin this dependency will be together with the application (fat jAR).
-- In Scope `test` the dependency will be only used for tests purpose.  
+- By default the scope is compile. With the spring-boot plugin this dependency will be packed in the application archive (fat jAR).
+- With scope `test` the dependency will be only used for test purposes.  
   
 
 ### Plugins
@@ -206,7 +206,7 @@ Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
 #### How to Add and Configure Plugin
 
 * Read the documentation about the Plugin. 
-* The documentation normally follow the same pattern.
+* The documentation normally follows the same pattern.
 * Search plugins that can solve an issue about build, example: generate proto-buf classes based in proto file; automatically change version of a code; run an external command or script
 
 ### Folder Structure
@@ -225,7 +225,7 @@ Convention over configuration
 
 ## Setup Logging
 
-As said before we are going to use Logback. If you want know why we choose it among others like: log4j, commons-log; see [Reasons to Switch](http://logback.qos.ch/reasonsToSwitch.html). 
+As mentioned before we are going to use Logback. If you want know why we choose it among others like: log4j, commons-log; see [Reasons to Switch](http://logback.qos.ch/reasonsToSwitch.html). 
 
 *Nice features in our specific configuration:*
 
@@ -244,7 +244,7 @@ File used by the application:
 
 * Log in the File using JSON format with rolling policy
 * Log warning and error messages in standard output
-* the file should be in `src/main/resources/logback.xml`
+* The file should be in `src/main/resources/logback.xml`
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -306,7 +306,7 @@ File used by the application:
 File used when running unit tests:
 
 * Log all messages in standard output in a regular format
-* the file should be in `src/test/resources/logback-test.xml`
+* The file should be in `src/test/resources/logback-test.xml`
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -326,16 +326,16 @@ File used when running unit tests:
 
 ### A little bit about Log
 
-* Use async appender: To avoid block your application when logging messages
-* Standard Out: use carefully some infrastructures doesn't allow developers to see it  
+* Use async appender: To avoid blocking your application when logging messages
+* Standard Out: Use carefully, some infrastructures don't allow developers to see it
 
 ## Spring-boot Application
 
 Spring-boot application encapsulates in a JAR file the server, libraries and the application itself.
-By default many things happen as:
+By default many things happen:
 * Tomcat Server to run your application
 * Port is 8080
-* Load automatically dependencies when is found in classpath: Cassandra, MongoDB, Kafka, among others
+* Automatic loading of dependencies when found in classpath: Cassandra, MongoDB, Kafka, among others
 * But, you can override all the things as you wish
 
 ## Spring Framework
@@ -387,7 +387,7 @@ Expected return:
 }
 ```
 
-Actuator give you many helpful endpoints, some of them:
+Actuator provides many helpful endpoints, such as:
 
 * env
 * beans
@@ -397,7 +397,7 @@ Actuator give you many helpful endpoints, some of them:
 * mappings
 * threaddump
 
-You can customize endpoints, details can be found here: [Spring Boot Actuator: Production-ready features](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-endpoints.html)
+You can add and customize endpoints, details can be found here: [Spring Boot Actuator: Production-ready features](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-endpoints.html)
 
 ## Enable Swagger
 
@@ -434,12 +434,12 @@ public class SwaggerConfig {
 }
 ```
 
-You can access the http://localhost:8080/swagger-ui.html to see all the links already created by your application like the Actuator Endpoints.
+You can access http://localhost:8080/swagger-ui.html to see all the links already created by your application like the Actuator Endpoints.
 
 ## The Model
 
 In the [reference](https://docs.spring.io/spring-data/cassandra/docs/2.2.0.RELEASE/reference/html/#cassandra.repositories) documentation 
-you will find all possibilities to use and configure how the application will work with Cassandra.  
+you will find all the possibilities to use and configure how the application will work with Cassandra.  
 
 ```java
 import org.springframework.data.cassandra.core.mapping.Column;
@@ -466,7 +466,7 @@ public class Person {
 
 ## The Repository
 
-The Spring will automatically create an instance of this Interface and implement his methods.
+The Spring will automatically create an instance of this Interface and implement it's methods.
 Everything is convention over configuration. So the method's name tell him to use the Field `email` from the `Person` entity. 
 
 ```java
@@ -504,7 +504,7 @@ to know how it works and how we should configure our application.
 * Read about the [abstraction](https://cloud.spring.io/spring-cloud-static/spring-cloud-stream/2.2.1.RELEASE/spring-cloud-stream.html) 
 so we know the configuration that doesn't rely on implementation.
 * And read about the [Kafka binder](https://cloud.spring.io/spring-cloud-static/spring-cloud-stream-binder-kafka/2.2.1.RELEASE/spring-cloud-stream-binder-kafka.html) 
-once is the one that we choose.
+which is the one that we will use.
 
 ### Binding our topic
 
@@ -629,7 +629,7 @@ ___
 
 ### Integration Test
 
-Your application is like a BOX and you deal with only by the input and output. In our example the input and output is the REST API.
+Your application is like a BOX and you only deal with the input and output. In our example the input and output is the REST API.
 
 ### Unit Test
 
@@ -640,7 +640,7 @@ The test is about the piece inside your application, you are going to test in me
 ## Unit tests with Mockito
 
 Notes:
-* Try to avoid run with Spring Context but only with Junit: `@RunWith(JUnit4.class)`
+* Try to avoid running with Spring Context, run with Junit instead: `@RunWith(JUnit4.class)`
 * With Mockito we can: verify expectations, capture arguments or return something
 * Instantiate your class and mock dependencies
 * Use constructor to know all dependencies
@@ -886,8 +886,8 @@ The list here is a subset of libraries and guides useful in any project:
 
  # Do it by yourself
 
- * Add cache to avoid get the same data always going to retrive from cassandra.
+ * Add cache to avoid retrieving the same data from cassandra.
 
- * Force to expire the cache whenever the data is updated
+ * Force cache expiration whenever the data is updated
 
  * Allow to enable/disable Swagger by configuration
