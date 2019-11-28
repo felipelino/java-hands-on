@@ -198,6 +198,34 @@ Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
 - By default the scope is compile. With the spring-boot plugin this dependency will be packed in the application archive (fat jAR).
 - With scope `test` the dependency will be only used for test purposes.  
   
+### Adjust Dependencies
+
+If the pom.xml has a exclusion similar this:
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-test</artifactId>
+    <scope>test</scope>
+    <exclusions>
+        <exclusion>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+```
+
+Please remove all the block with the exclusion. Basically this exclusion blocks the Maven to identify the unit tests.
+
+*Expected:*
+
+```xml
+ <dependency>
+     <groupId>org.springframework.boot</groupId>
+     <artifactId>spring-boot-starter-test</artifactId>
+     <scope>test</scope>
+ </dependency>
+```
 
 ### Plugins
 
@@ -442,6 +470,7 @@ In the [reference](https://docs.spring.io/spring-data/cassandra/docs/2.2.0.RELEA
 you will find all the possibilities to use and configure how the application will work with Cassandra.  
 
 ```java
+import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
 import org.springframework.data.cassandra.core.mapping.Column;
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyColumn;
 import org.springframework.data.cassandra.core.mapping.Table;
@@ -470,6 +499,10 @@ The Spring will automatically create an instance of this Interface and implement
 Everything is convention over configuration. So the method's name tell him to use the Field `email` from the `Person` entity. 
 
 ```java
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
+
 @Repository
 @Component
 public interface PersonRepository extends CrudRepository<Person, String> {
@@ -506,9 +539,20 @@ so we know the configuration that doesn't rely on implementation.
 * And read about the [Kafka binder](https://cloud.spring.io/spring-cloud-static/spring-cloud-stream-binder-kafka/2.2.1.RELEASE/spring-cloud-stream-binder-kafka.html) 
 which is the one that we will use.
 
+After read about the _Kafka Binder_ we notice that we need to add this dependency:
+```xml
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-cloud-stream-binder-kafka</artifactId>
+</dependency>
+```
+
 ### Binding our topic
 
 ```java
+import org.springframework.cloud.stream.annotation.Input;
+import org.springframework.messaging.SubscribableChannel;
+
 public interface Topics {
 
     String INPUT = "person-in";
@@ -524,6 +568,11 @@ Add in your main class: `@EnableBinding(Topics.class)`
 Our listener is attached to our topic and should persist the data in the Cassandra database.
 
 ```java
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.stream.annotation.StreamListener;
+import org.springframework.stereotype.Component;
+
 @Component
 public class PersonListener {
 
@@ -580,6 +629,17 @@ The contentType `application/json` will serialize the object using an instance o
 ## Controller
 
 ```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api")
 public class ApiController {
@@ -646,6 +706,20 @@ Notes:
 * Use constructor to know all dependencies
 
 ```java
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Matchers.eq;
 
 @RunWith(JUnit4.class)
 public class ApiControllerUnitTest {
@@ -735,7 +809,41 @@ spring.data.cassandra.jmx-enabled=false
 * You can use other options to start the EmbeddedCassandra 
 
 ```java
-@ContextConfiguration(classes = {HandsOnApplication.class})
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.tools.ant.util.FileUtils;
+import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.stream.test.binder.MessageCollector;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+import java.io.InputStreamReader;
+import java.util.Properties;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@ContextConfiguration(classes = {HandsOnApplication.class}) // Replace here to put your main class
 @AutoConfigureMockMvc // When application boots the test will instantiate a MockMvc
 @TestPropertySource("classpath:application-test.properties") // Override configuration only for tests
 @RunWith(SpringRunner.class)
