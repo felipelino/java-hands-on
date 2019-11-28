@@ -824,7 +824,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.stream.test.binder.MessageCollector;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
@@ -927,9 +926,6 @@ public class HandsOnApplicationTests {
     @Autowired
     @Qualifier(Topics.INPUT)
     private MessageChannel messageChannel;
-
-    @Autowired
-    private MessageCollector messageCollector;
 
     @Autowired
     private ObjectMapper objectMapper; // The default instance created by Spring
