@@ -440,25 +440,26 @@ import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
 import java.util.Arrays;
 import java.util.TreeSet;
 
 @Configuration
-@EnableSwagger2
 public class SwaggerConfig {
-    @Bean
-    public Docket api() {
-        return new Docket(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.any()).build()
-                .consumes(new TreeSet<>(Arrays.asList("application/json")))
-                .produces(new TreeSet<>(Arrays.asList("application/json")))
-                .apiInfo(metaData());
-    }
 
-    private ApiInfo metaData() {
-        return new ApiInfoBuilder()
-                .title("REST API ").description("\"REST API for an Amazing Service\"").version("v1").build();
-    }
+ @Bean
+ public Docket api() {
+  return new Docket(DocumentationType.SWAGGER_2)
+          .select().apis(RequestHandlerSelectors.any()).build()
+          .consumes(new TreeSet<>(Arrays.asList("application/json")))
+          .produces(new TreeSet<>(Arrays.asList("application/json")))
+          .apiInfo(metaData());
+ }
+
+ private ApiInfo metaData() {
+  return new ApiInfoBuilder()
+          .title("REST API ").description("\"REST API for an Amazing Service\"").version("v1").build();
+ }
 }
 ```
 
@@ -504,7 +505,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Component
 public interface PersonRepository extends CrudRepository<Person, String> {
     Person findByEmail(String email);
 }
@@ -516,9 +516,10 @@ Edit/add file: `application.yaml` in `resources` folder.
 
 ```yaml
 spring.data.cassandra:
-  contact-points: localhost
-  port: 9042
-  keyspace-name: mykeyspace
+ contact-points: localhost
+ port: 9042
+ keyspace-name: mykeyspace
+ local-datacenter: datacenter1
 ```
 
 You can override and compose configurations using:
@@ -707,6 +708,9 @@ Notes:
 
 ```java
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hands.on.controller.ApiController;
+import com.hands.on.model.Person;
+import com.hands.on.repository.PersonRepository;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -718,64 +722,65 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 
 @RunWith(JUnit4.class)
 public class ApiControllerUnitTest {
 
-    private ApiController apiController;
-    private MessageChannel messageChannel;
-    private PersonRepository personRepository;
-    private ObjectMapper objectMapper = new ObjectMapper();
+ private ApiController apiController;
+ private MessageChannel messageChannel;
+ private PersonRepository personRepository;
+ private ObjectMapper objectMapper = new ObjectMapper();
 
-    @Before
-    public void initMocks() {
-        this.messageChannel = Mockito.mock(MessageChannel.class);
-        this.personRepository = Mockito.mock(PersonRepository.class);
-        this.apiController = new ApiController(this.messageChannel, this.personRepository);
-    }
+ @Before
+ public void initMocks() {
+  this.messageChannel = Mockito.mock(MessageChannel.class);
+  this.personRepository = Mockito.mock(PersonRepository.class);
+  this.apiController = new ApiController(this.messageChannel, this.personRepository);
+ }
 
-    @Test
-    public void getPerson() throws Exception {
-        String email = "john.doe@company.com";
+ @Test
+ public void getPerson() throws Exception {
+  String email = "john.doe@company.com";
 
-        // Act
-        ResponseEntity responseEntity = this.apiController.get(email);
+  // Act
+  ResponseEntity responseEntity = this.apiController.get(email);
 
-        // Assert
-        Assert.assertNotNull(responseEntity);
-        Assert.assertEquals(404, responseEntity.getStatusCodeValue());
-        Mockito.verify(this.personRepository, Mockito.times(1)).findByEmail(eq(email));
-        Mockito.verifyNoMoreInteractions(this.personRepository);
-        Mockito.verifyZeroInteractions(this.messageChannel);
-    }
+  // Assert
+  Assert.assertNotNull(responseEntity);
+  Assert.assertEquals(404, responseEntity.getStatusCodeValue());
+  Mockito.verify(this.personRepository, Mockito.times(1)).findByEmail(eq(email));
+  Mockito.verifyNoMoreInteractions(this.personRepository);
+  Mockito.verifyNoMoreInteractions(this.messageChannel);
+ }
 
-    @Test
-    public void postPerson() throws Exception {
+ @Test
+ public void postPerson() throws Exception {
 
-        String email = "john.doe@company.com";
-        String json = "{\"email\": \""+email+"\", \"firstName\": \"Edsger\", \"lastName\": \"Dijkstra\", \"yearBirth\": 1930 }";
-        Person person = this.objectMapper.readValue(json, Person.class);
+  String email = "john.doe@company.com";
+  String json = "{\"email\": \""+email+"\", \"firstName\": \"Edsger\", \"lastName\": \"Dijkstra\", \"yearBirth\": 1930 }";
+  Person person = this.objectMapper.readValue(json, Person.class);
 
-        Mockito.when(this.messageChannel.send(any(Message.class))).thenReturn(true);
+  Mockito.when(this.messageChannel.send(any(Message.class))).thenReturn(true);
 
-        // Act
-        ResponseEntity responseEntity = this.apiController.insert(person);
+  // Act
+  ResponseEntity responseEntity = this.apiController.insert(person);
 
-        // Assert
-        Assert.assertNotNull(responseEntity);
-        Assert.assertEquals(204, responseEntity.getStatusCodeValue());
-        ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
-        Mockito.verify(this.messageChannel, Mockito.times(1)).send(captor.capture());
-        Mockito.verifyNoMoreInteractions(this.messageChannel);
-        Mockito.verifyZeroInteractions(this.personRepository);
+  // Assert
+  Assert.assertNotNull(responseEntity);
+  Assert.assertEquals(204, responseEntity.getStatusCodeValue());
+  ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
+  Mockito.verify(this.messageChannel, Mockito.times(1)).send(captor.capture());
+  Mockito.verifyNoMoreInteractions(this.messageChannel);
+  Mockito.verifyNoMoreInteractions(this.personRepository);
 
-        Message message = captor.getValue();
-        Person personInPayload = (Person) message.getPayload();
-        Assert.assertEquals(person, personInPayload); // Only will work if we implements the method Equals in class Person
-        JSONAssert.assertEquals(json, this.objectMapper.writeValueAsString(personInPayload), true);
-    }
+  Message message = captor.getValue();
+  Person personInPayload = (Person) message.getPayload();
+  Assert.assertEquals(person, personInPayload); // Only will work if we implements the method Equals in class Person
+  JSONAssert.assertEquals(json, this.objectMapper.writeValueAsString(personInPayload), true);
+ }
 }
 ```
 
@@ -960,7 +965,7 @@ ___
 1. `mvn clean package`
 1. `java -jar target\hands-on-0.0.1-SNAPSHOT.jar`
 1. Check if application booted in: `http://localhost:8080/actuator/info` , should return HTTP 200 with a JSON.
-1. You can access the Swagger Documentation `http://localhost:8080/swagger-ui.html`
+1. You can access the Swagger Documentation `http://localhost:8080/swagger-ui/index.html`
 1. POST and GET a sample
 ```shell script
 curl -v -X POST 'http://localhost:8080/api/person' -H 'Content-Type: application/json' -d '{"email": "james.watt@gmail.com", "firstName": "James", "lastName": "Watt", "yearBirth": 1736}'

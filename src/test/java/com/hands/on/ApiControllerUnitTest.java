@@ -17,7 +17,8 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
+
 
 @RunWith(JUnit4.class)
 public class ApiControllerUnitTest {
@@ -46,7 +47,7 @@ public class ApiControllerUnitTest {
         Assert.assertEquals(404, responseEntity.getStatusCodeValue());
         Mockito.verify(this.personRepository, Mockito.times(1)).findByEmail(eq(email));
         Mockito.verifyNoMoreInteractions(this.personRepository);
-        Mockito.verifyZeroInteractions(this.messageChannel);
+        Mockito.verifyNoMoreInteractions(this.messageChannel);
     }
 
     @Test
@@ -67,7 +68,7 @@ public class ApiControllerUnitTest {
         ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
         Mockito.verify(this.messageChannel, Mockito.times(1)).send(captor.capture());
         Mockito.verifyNoMoreInteractions(this.messageChannel);
-        Mockito.verifyZeroInteractions(this.personRepository);
+        Mockito.verifyNoMoreInteractions(this.personRepository);
 
         Message message = captor.getValue();
         Person personInPayload = (Person) message.getPayload();
