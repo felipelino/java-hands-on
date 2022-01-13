@@ -61,7 +61,6 @@ public class HandsOnApplicationTests {
 		Cluster cluster = Cluster.builder()
 				.addContactPoints(cassandraHosts)
 				.withPort(Integer.parseInt(cassandraPort))
-				.withoutJMXReporting()
 				.build();
 		// Connect and execute CQL Script
 		Session session = cluster.connect();
