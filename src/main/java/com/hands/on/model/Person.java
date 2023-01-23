@@ -1,16 +1,14 @@
 package com.hands.on.model;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
 import org.springframework.data.cassandra.core.mapping.Column;
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyColumn;
 import org.springframework.data.cassandra.core.mapping.Table;
 
-import java.util.Objects;
-
-
 @Table("person")
 public class Person {
-
     @PrimaryKeyColumn(type = PrimaryKeyType.PARTITIONED)
     private String email;
 
@@ -47,7 +45,6 @@ public class Person {
         this.lastName = lastName;
     }
 
-
     public int getYearBirth() {
         return yearBirth;
     }
@@ -59,26 +56,16 @@ public class Person {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
+
         if (o == null || getClass() != o.getClass()) return false;
+
         Person person = (Person) o;
-        return yearBirth == person.yearBirth &&
-                Objects.equals(email, person.email) &&
-                Objects.equals(firstName, person.firstName) &&
-                Objects.equals(lastName, person.lastName);
+
+        return new EqualsBuilder().append(yearBirth, person.yearBirth).append(email, person.email).append(firstName, person.firstName).append(lastName, person.lastName).isEquals();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(email, firstName, lastName, yearBirth);
-    }
-
-    @Override
-    public String toString() {
-        return "Person{" +
-                "email='" + email + '\'' +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", yearBirth=" + yearBirth +
-                '}';
+        return new HashCodeBuilder(17, 37).append(email).append(firstName).append(lastName).append(yearBirth).toHashCode();
     }
 }

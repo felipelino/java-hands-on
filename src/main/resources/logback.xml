@@ -1,23 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <appender name="STDOUT-ERROR" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${logStdOutLevel:-ERROR}</level>
+            <level>${logLevel:-ERROR}</level>
         </filter>
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <Pattern>
-                %d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{1} - %msg%n
-            </Pattern>
+            <Pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{1} - %msg%n</Pattern>
         </layout>
     </appender>
-    <appender name="FILE-JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${logFilePath:-logs}/${logFileName:-application}.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${logFilePath:-logs}/${logFileName:-application}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <maxFileSize>20MB</maxFileSize>
-            <maxHistory>7</maxHistory>
-            <totalSizeCap>100MB</totalSizeCap>
-        </rollingPolicy>
+    <appender name="STDOUT-JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
                 <timestamp>
@@ -35,7 +26,7 @@
                         "Thread": "%thread",
                         "Logger": "%logger",
                         "HostName": "${HOSTNAME}",
-                        "Message":  "%msg"
+                        "Message": "%msg"
                         }
                     </pattern>
                 </pattern>
@@ -43,10 +34,9 @@
         </encoder>
     </appender>
     <appender name="ASYNC-JSON" class="net.logstash.logback.appender.LoggingEventAsyncDisruptorAppender">
-        <appender-ref ref="${logAppender:-FILE-JSON}" />
+        <appender-ref ref="${logAppender:-STDOUT-JSON}" />
     </appender>
     <root level="${logLevel:-INFO}">
         <appender-ref ref="ASYNC-JSON" />
-        <appender-ref ref="STDOUT-ERROR" />
     </root>
 </configuration>

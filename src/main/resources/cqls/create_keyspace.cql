@@ -1,4 +1,4 @@
-CREATE KEYSPACE mykeyspace WITH REPLICATION = {
+CREATE KEYSPACE IF NOT EXISTS mykeyspace WITH REPLICATION = {
    'class' : 'NetworkTopologyStrategy',
    'datacenter1' : 1
   } ;
