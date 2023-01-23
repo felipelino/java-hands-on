@@ -1,33 +1,32 @@
 package com.hands.on;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hands.on.model.Person;
 import com.hands.on.repository.PersonRepository;
-import com.hands.on.stream.Topics;
+import com.hands.on.stream.PersonProducer;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.tools.ant.util.FileUtils;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
+import org.springframework.cloud.stream.binder.test.InputDestination;
+import org.springframework.cloud.stream.binder.test.TestChannelBinderConfiguration;
+import org.springframework.context.annotation.Import;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.util.Properties;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -39,8 +38,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(classes = {HandsOnApplication.class})
 @AutoConfigureMockMvc // When application boots the test will instantiate a MockMvc
 @TestPropertySource("classpath:application-test.properties") // Override configuration only for tests
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest	// The application will startup
+@Import(TestChannelBinderConfiguration.class) // Enable kafka binder for test
 public class HandsOnApplicationTests {
 
 	@Autowired
@@ -49,31 +49,30 @@ public class HandsOnApplicationTests {
 	@Autowired
 	private PersonRepository repository;
 
-	@BeforeClass
-	public static void initCassandra() throws Exception {
+	@BeforeAll
+	public static void setupCassandra() throws Exception {
+
+		// Connect to Cassandra
 		Properties prop = new Properties();
 		prop.load(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("application-test.properties"));
-		String cassandraHosts = prop.getProperty("spring.data.cassandra.contact-points");
-		String cassandraPort = prop.getProperty("spring.data.cassandra.port");
+		String contactPoints = prop.getProperty("cassandra.contact-points");
+		int port = Integer.parseInt(prop.getProperty("cassandra.port"));
+		String localDatacenter = prop.getProperty("cassandra.local-datacenter");
 
-		// Start Cassanda Unit
-		EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-test.yaml", 20000);
-		Cluster cluster = Cluster.builder()
-				.addContactPoints(cassandraHosts)
-				.withPort(Integer.parseInt(cassandraPort))
+		CqlSession session = CqlSession.builder()
+				.addContactPoint(new InetSocketAddress(contactPoints, port))
+				.withLocalDatacenter(localDatacenter)
 				.build();
-		// Connect and execute CQL Script
-		Session session = cluster.connect();
+
+		// Create resources at Database
 		String cqlScript1 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_keyspace.cql")));
 		session.execute(cqlScript1);
 		String cqlScript2 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_table.cql")));
 		session.execute(cqlScript2);
+
+		session.close();
 	}
 
-	@AfterClass
-	public static void cleanCassandra() throws Exception {
-		EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
-	}
 
 	@Test
 	public void postAndGetPerson() throws Exception {
@@ -88,14 +87,16 @@ public class HandsOnApplicationTests {
 
 		// Act/Assert - POST
 		MvcResult mvcResult = this.mockMvc.perform(post("/api/person")
-				.content(contentToPost).contentType("application/json"))
+						.content(contentToPost).contentType("application/json"))
 				.andDo(print())
 				.andExpect(status().isNoContent()).andReturn();
 
+		Thread.sleep(2000);
+
 		// Act/Assert - GET
 		mvcResult = this.mockMvc.perform(get("/api/person")
-				.param("email", email)
-				.accept("application/json"))
+						.param("email", email)
+						.accept("application/json"))
 				.andDo(print())
 				.andExpect(status().isOk())
 				.andExpect(content().json(contentToPost, true))
@@ -104,14 +105,16 @@ public class HandsOnApplicationTests {
 
 	/* Tests for Kafka */
 	@Autowired
-	@Qualifier(Topics.INPUT)
-	private MessageChannel messageChannel;
+	private InputDestination input; // it's a kind of    "mock" for the topics
+
+	@Autowired
+	private PersonProducer personProducer;
 
 	@Autowired
 	private ObjectMapper objectMapper; // The default instance created by Spring
 
 	@Test
-	public void publishMessageToChannelAndCheckRepository() throws Exception {
+	public void publishMessageToTopicAndCheckRepository() throws Exception {
 
 		// Prepare
 		String email = "james.watt@company.com";
@@ -120,15 +123,35 @@ public class HandsOnApplicationTests {
 		this.repository.delete(p);
 
 		String json = "{\"email\": \""+email+"\", \"firstName\": \"James\", \"lastName\": \"Watt\", \"yearBirth\": 1736 }";
-		Message<String> message =  MessageBuilder.withPayload(json).build();
 
 		// Act
-		this.messageChannel.send(message);
+		this.input.send(MessageBuilder.withPayload(json).build(),"person-topic");
 
 		// Assert
 		Person person = this.repository.findByEmail(email);
-		Assert.assertNotNull(person);
+		Assertions.assertNotNull(person);
 		String jsonFromRepository = this.objectMapper.writeValueAsString(person);
 		JSONAssert.assertEquals(json, jsonFromRepository, true);
+	}
+
+	@Test
+	public void produceMessageAndCheckRepository() throws Exception {
+
+		// Prepare
+		Person person = new Person();
+		person.setEmail("john.doe@acme.com");
+		person.setFirstName("John");
+		person.setLastName("Doe");
+		person.setYearBirth(2023);
+
+		this.repository.delete(person);
+
+		// Act
+		this.personProducer.produce(person);
+
+		// Assert
+		Person findPerson = this.repository.findByEmail(person.getEmail());
+		Assertions.assertNotNull(findPerson);
+		Assertions.assertEquals(person, findPerson);
 	}
 }

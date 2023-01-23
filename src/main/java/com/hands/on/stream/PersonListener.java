@@ -3,8 +3,10 @@ package com.hands.on.stream;
 import com.hands.on.model.Person;
 import com.hands.on.repository.PersonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.annotation.StreamListener;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+
+import java.util.function.Consumer;
 
 @Component
 public class PersonListener {
@@ -16,8 +18,9 @@ public class PersonListener {
         this.repository = repository;
     }
 
-    @StreamListener(Topics.INPUT)
-    public void handlePerson(Person person) {
-        repository.save(person);
+    // the methods name "consume" matches the "consumer-in-0" in application.yaml
+    @Bean
+    Consumer<Person> consume() {
+        return person -> repository.save(person);
     }
 }

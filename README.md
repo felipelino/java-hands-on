@@ -9,11 +9,11 @@
 * Listening Message from a Kafka Queue
 * Logging
 * Maven to Build
-* Swagger Documentation 
+* Swagger Documentation
 
 # Pre-requisites
 
-* [JDK Java 1.8](https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
+* [JDK Java 17](https://jdk.java.net/archive/)
 * [IntelliJ Community](https://www.jetbrains.com/idea/download/) as IDE
 * [Apache Maven](https://maven.apache.org)  to Build
 * [Docker](https://docs.docker.com/docker-for-windows/install/) so we can go up with Cassandra and Kafka
@@ -23,7 +23,7 @@
 1. Receive a model by REST API OR receive from a Kafka Topic
 1. Listen to the Kafka Topic
 1. Persist the data in Cassandra
-1. Allow Get from the REST API 
+1. Allow Get from the REST API
 1. Documentation exposed by Swagger
 
 # Steps
@@ -52,33 +52,23 @@ services:
     ports:
       - 9042:9042
     restart: unless-stopped
-    networks:
-      - hands-on-net
 
   zookeeper:
     image: zookeeper:3.4.13
     container_name: zookeeper
-    networks:
-      - hands-on-net
     restart: unless-stopped
 
   kafka:
-    image: wurstmeister/kafka:2.12-2.0.1
-    container_name: kafka
-    networks:
-      - hands-on-net
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_ADVERTISED_HOST_NAME: localhost
-      KAFKA_CREATE_TOPICS: "test:1:1"
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    restart: unless-stopped
-
-networks:
-  hands-on-net:
+   image: wurstmeister/kafka:2.13-2.8.1
+   container_name: kafka
+   ports:
+    -    "9092:9092"
+   environment:
+    KAFKA_ADVERTISED_HOST_NAME: localhost
+    KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+   volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+   restart: unless-stopped
 ```
 
 *Start Dependencies*
@@ -89,14 +79,14 @@ docker-compose -f .\docker-compose.yml up -d
 ```
 
 ## Prepare database
-   
-1. Execute the command: `docker exec -it cassandra_custom cqlsh`   
-1. Copy and Paste the following CQL Script   
+
+1. Execute the command: `docker exec -it cassandra_custom cqlsh`
+1. Copy and Paste the following CQL Script
 ```cql
-CREATE KEYSPACE mykeyspace WITH REPLICATION = {
+CREATE KEYSPACE IF NOT EXISTS mykeyspace WITH REPLICATION = {
    'class' : 'NetworkTopologyStrategy',
    'datacenter1' : 1
-  } ;
+  };
 
 CREATE TABLE IF NOT EXISTS mykeyspace.person (
     email text,
@@ -109,15 +99,17 @@ CREATE TABLE IF NOT EXISTS mykeyspace.person (
 
 ## Spring Boot Initializer
 
-* [Search 'Spring boot initializer' in Google](https://lmgtfy.com/?q=Spring+Boot+Initializer)
+* [Search 'Spring boot initializer' in Google](https://letmegooglethat.com/?q=Spring+boot+initializer)
 * Or direct Link:  https://start.spring.io/
 
 *Add Spring Dependencies*
 
-* [spring-boot-starter-web](https://www.baeldung.com/spring-boot-starters): Allow application to answer REST HTTP 
+* [spring-boot-starter-web](https://www.baeldung.com/spring-boot-starters): Allow application to answer REST HTTP
 * [Spring Actuator](https://spring.io/guides/gs/actuator-service/): Adds endpoints that are useful to monitor or debug your application
 * [Spring Cloud Stream](https://spring.io/projects/spring-cloud-stream): To publish and listen to kafka topics (or other kind of queues as: Kafka, AWS Kinesis, RabbitMQ)
 * [Spring Data Cassandra](https://spring.io/projects/spring-data-cassandra): To access Cassandra
+
+[Click to retrive the same configuration](https://start.spring.io/#!type=maven-project&language=java&platformVersion=3.0.2&packaging=jar&jvmVersion=17&groupId=com.hands.on&artifactId=hands-on&name=hands-on&description=&packageName=com.hands.on&dependencies=web,actuator,cloud-stream,data-cassandra)
 
 
 *Steps in Spring IO Initializer*
@@ -127,10 +119,10 @@ CREATE TABLE IF NOT EXISTS mykeyspace.person (
 * `Open as Project` with IntelliJ selecting the `pom.xml`
 * Optionally you can set to download dependencies automatically when pom is updated.
 * Run the class with annotation `@SpringBootApplication` as a Main application.
-* If it fails comment dependency spring-cloud-stream in `pom.xml`
+* If it fails comment dependency `spring-boot-starter-data-cassandra` in `pom.xml`
 * If everything is OK in output log will appear:
 ```
-Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
+Started HandsOnApplication in 2.297 seconds (process running for 2.669)
 ```
 * Stop application
 
@@ -154,19 +146,39 @@ Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
 
 #### Other Dependencies
 
-* [Springfox Swagger](https://springfox.github.io/springfox/docs/current/#springfox-swagger-ui): To expose our REST API in a friendly view 
-* springfox-swagger2
-* [Logback](https://logback.qos.ch/): Logging library
+* [Springdoc Swagger](https://springdoc.org/v2/): To expose our REST API in a friendly view
 * [Logstash logback](https://github.com/logstash/logstash-logback-encoder): Library to write log in JSON format compatible with [Logstash](https://www.elastic.co/pt/products/logstash)
+
+
+#### Indirect Dependencies
+
+* [Logback](https://logback.qos.ch/): Logging library
 * [Jackson JSON](https://github.com/FasterXML/jackson): Library to parse JSON to Object and vice-versa.
 * [Apache Commons Lang](https://commons.apache.org/proper/commons-lang/): Library with useful methods to manipulate Strings, Collections, Objects
 
+Run `mvn dependency:tree`
+
+This command will show you the direct dependencies and indirect.
+
+```
+[INFO] +- ch.qos.logback:logback-classic:jar:1.4.5:compile
+[INFO] |  +- ch.qos.logback:logback-core:jar:1.4.5:compile
+[INFO] |  \- org.slf4j:slf4j-api:jar:2.0.6:compile
+[INFO] +- net.logstash.logback:logstash-logback-encoder:jar:7.2:compile
+[INFO] |  \- com.fasterxml.jackson.core:jackson-databind:jar:2.14.1:compile
+[INFO] |     +- com.fasterxml.jackson.core:jackson-annotations:jar:2.14.1:compile
+[INFO] |     \- com.fasterxml.jackson.core:jackson-core:jar:2.14.1:compile
+```
+
+*Tip*: Always before add a new dependency, check if it exists as indirect dependency.
+
 #### Test Dependencies
 
-* [Cassandra Unit Spring](https://github.com/jsevellec/cassandra-unit/wiki/Spring-for-Cassandra-unit): For unit/integration tests with cassandra
 * [Mockito](https://site.mockito.org/): For tests using mock for dependencies
 * [Spring Cloud Stream Test](https://spring.io/blog/2017/10/24/how-to-test-spring-cloud-stream-applications-part-i): To test applications with cloud stream.
 * [Spring Boot Starter Test](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-testing.html):  To test spring boot applications.
+
+If you run the command to see the dependency tree you will realize that these dependencies are already there.
 
 #### How to Search and Add Dependencies
 
@@ -178,9 +190,9 @@ Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
 
 ```xml
 <dependency>
-    <groupId>org.apache.commons</groupId>
-    <artifactId>commons-lang3</artifactId>
-    <version>3.9</version>
+    <groupId>net.logstash.logback</groupId>
+    <artifactId>logstash-logback-encoder</artifactId>
+    <version>7.2</version>
 </dependency>
 ```
 
@@ -188,52 +200,23 @@ Started HandsOnApplication in 7.079 seconds (JVM running for 8.001)
 
 ```xml
 <dependency>
-    <groupId>org.cassandraunit</groupId>
-    <artifactId>cassandra-unit-spring</artifactId>
-    <version>3.11.2.0</version>
-    <scope>test</scope>
-</dependency>
-```
-  
-- By default the scope is compile. With the spring-boot plugin this dependency will be packed in the application archive (fat jAR).
-- With scope `test` the dependency will be only used for test purposes.  
-  
-### Adjust Dependencies
-
-If the pom.xml has a exclusion similar this:
-```xml
-<dependency>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-test</artifactId>
     <scope>test</scope>
-    <exclusions>
-        <exclusion>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-        </exclusion>
-    </exclusions>
 </dependency>
 ```
 
-Please remove all the block with the exclusion. Basically this exclusion blocks the Maven to identify the unit tests.
+- By default the scope is compile. With the spring-boot plugin this dependency will be packed in the application archive (fat jAR).
+- With scope `test` the dependency will be only used for test purposes.
 
-*Expected:*
-
-```xml
- <dependency>
-     <groupId>org.springframework.boot</groupId>
-     <artifactId>spring-boot-starter-test</artifactId>
-     <scope>test</scope>
- </dependency>
-```
 
 ### Plugins
 
-* [spring-boot-maven-plugin](https://docs.spring.io/spring-boot/docs/current/reference/html/build-tool-plugins-maven-plugin.html): Provides Spring Boot support in Maven, letting you package executable jar or war archives and run an application “in-place”. 
+* [spring-boot-maven-plugin](https://docs.spring.io/spring-boot/docs/current/reference/html/build-tool-plugins-maven-plugin.html): Provides Spring Boot support in Maven, letting you package executable jar or war archives and run an application “in-place”.
 
 #### How to Add and Configure Plugin
 
-* Read the documentation about the Plugin. 
+* Read the documentation about the Plugin.
 * The documentation normally follows the same pattern.
 * Search plugins that can solve an issue about build, example: generate proto-buf classes based in proto file; automatically change version of a code; run an external command or script
 
@@ -253,18 +236,17 @@ Convention over configuration
 
 ## Setup Logging
 
-As mentioned before we are going to use Logback. If you want know why we choose it among others like: log4j, commons-log; see [Reasons to Switch](http://logback.qos.ch/reasonsToSwitch.html). 
+As mentioned before we are going to use Logback. If you want know why we choose it among others like: log4j, commons-log; see [Reasons to Switch](http://logback.qos.ch/reasonsToSwitch.html).
 
 *Nice features in our specific configuration:*
 
-* Parameters: `${logStdOutLevel:-WARN}` , `${logLevel:-INFO}`, `${logFilePath:-logs}`, `${logFileName:-application}`
-* You can override this in VM Options, example: `java -DlogLevel=DEBUG -DlogStdOutLevel=INFO -jar application.jar`
-* Output in JSON format when writing to a File
-* Output in regular format in standard output
+* Parameters: `${logAppender:-STDOUT}` , `${logLevel:-INFO}`
+* You can override this in VM Options, example: `java -DlogLevel=DEBUG -logAppender=STDOUT -jar application.jar`
+* Output in regular format when writing to standard output. Default is JSON format.
 
 *Tip:*
 
-* Always test and re-run your application 
+* Always test and re-run your application
 
 ### Setup logback.xml
 
@@ -277,24 +259,15 @@ File used by the application:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <appender name="STDOUT-ERROR" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${logStdOutLevel:-ERROR}</level>
+            <level>${logLevel:-ERROR}</level>
         </filter>
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <Pattern>
-                %d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{1} - %msg%n
-            </Pattern>
+            <Pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{1} - %msg%n</Pattern>
         </layout>
     </appender>
-    <appender name="FILE-JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${logFilePath:-logs}/${logFileName:-application}.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${logFilePath:-logs}/${logFileName:-application}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <maxFileSize>20MB</maxFileSize>
-            <maxHistory>7</maxHistory>
-            <totalSizeCap>100MB</totalSizeCap>
-        </rollingPolicy>
+    <appender name="STDOUT-JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
                 <timestamp>
@@ -307,24 +280,23 @@ File used by the application:
                 <pattern>
                     <!-- the pattern that defines what to include -->
                     <pattern>
-                        {
+                    {
                         "EventSeverity": "%level",
                         "Thread": "%thread",
                         "Logger": "%logger",
                         "HostName": "${HOSTNAME}",
-                        "Message":  "%msg"
-                        }
+                        "Message": "%msg"
+                    }
                     </pattern>
                 </pattern>
             </providers>
         </encoder>
     </appender>
     <appender name="ASYNC-JSON" class="net.logstash.logback.appender.LoggingEventAsyncDisruptorAppender">
-        <appender-ref ref="${logAppender:-FILE-JSON}" />
+        <appender-ref ref="${logAppender:-STDOUT-JSON}" />
     </appender>
     <root level="${logLevel:-INFO}">
         <appender-ref ref="ASYNC-JSON" />
-        <appender-ref ref="STDOUT-ERROR" />
     </root>
 </configuration>
 ``` 
@@ -360,7 +332,7 @@ File used when running unit tests:
 ## Spring-boot Application
 
 Spring-boot application encapsulates in a JAR file the server, libraries and the application itself.
-By default many things happen:
+By default, many things happen:
 * Tomcat Server to run your application
 * Port is 8080
 * Automatic loading of dependencies when found in classpath: Cassandra, MongoDB, Kafka, among others
@@ -370,15 +342,17 @@ By default many things happen:
 
 > The Spring Framework provides a comprehensive programming and configuration model for modern Java-based enterprise applications - on any kind of deployment platform.
 
-> A key element of Spring is infrastructural support at the application level: Spring focuses on the "plumbing" of enterprise applications so that teams can focus on application-level business logic, without unnecessary ties to specific deployment environments.
+> A key element of Spring is infrastructural support at the application level: Spring focuses on the    "plumbing" of enterprise applications so that teams can focus on application-level business logic, without unnecessary ties to specific deployment environments.
 
 * Inversion of Control (IoC)
 * Dependency Injection
-* Libraries and more libraries 
+* Libraries and more libraries
 
 ## Actuator Endpoints
 
-Enable Actuator endpoints
+Try to access the endpoint: http://localhost:8080/actuator/health
+
+Now, enable Actuator endpoints:
 
 Edit file `application.properties`:
 ```properties
@@ -387,33 +361,34 @@ management.endpoint.shutdown.enabled=false
 management.endpoints.web.exposure.include=*
 management.endpoint.health.show-details=always
 management.info.defaults.enabled=true
-management.info.git.mode=full
+management.endpoint.env.show-values=always
 ```
 
-If you try to access the endpoint: `http://localhost:8080/actuator/health`
+Run the application again and access the endpoint: http://localhost:8080/actuator/health
 
 Expected return:
 ```json
 {
-    "status": "UP",
-    "details": {
-        "diskSpace": {
-            "status": "UP",
-            "details": {
-                "total": 252839981056,
-                "free": 66116206592,
-                "threshold": 10485760
-            }
-        },
-        "cassandra": {
-            "status": "UP",
-            "details": {
-                "version": "3.11.4"
-            }
-        }
-    }
+	"status": "UP",
+	"components": {
+		"cassandra": {
+			"status": "UP",
+			"details": {
+				"version": {
+					"major": 3,
+					"minor": 11,
+					"patch": 14,
+					"dsepatch": -1
+				}
+			}
+		},
+		"ping": {
+			"status": "UP"
+		}
+	}
 }
 ```
+
 
 Actuator provides many helpful endpoints, such as:
 
@@ -429,46 +404,19 @@ You can add and customize endpoints, details can be found here: [Spring Boot Act
 
 ## Enable Swagger
 
-Create a `Bean` in Spring to enable Swagger and add some configuration.
-[Here](https://www.baeldung.com/swagger-2-documentation-for-spring-rest-api) you have a good reference to setup your Swagger.
+[Here](https://springdoc.org/v2/) you have a good reference to setup your Swagger.
 
-```java
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
+You can access http://localhost:8080/swagger-ui.html to see all the links already created by your application.
 
-import java.util.Arrays;
-import java.util.TreeSet;
-
-@Configuration
-public class SwaggerConfig {
-
- @Bean
- public Docket api() {
-  return new Docket(DocumentationType.SWAGGER_2)
-          .select().apis(RequestHandlerSelectors.any()).build()
-          .consumes(new TreeSet<>(Arrays.asList("application/json")))
-          .produces(new TreeSet<>(Arrays.asList("application/json")))
-          .apiInfo(metaData());
- }
-
- private ApiInfo metaData() {
-  return new ApiInfoBuilder()
-          .title("REST API ").description("\"REST API for an Amazing Service\"").version("v1").build();
- }
-}
+If you want show the    "actuator" endpoints you can enable it
+```properties
+springdoc.show-actuator=true
 ```
-
-You can access http://localhost:8080/swagger-ui.html to see all the links already created by your application like the Actuator Endpoints.
 
 ## The Model
 
-In the [reference](https://docs.spring.io/spring-data/cassandra/docs/2.2.0.RELEASE/reference/html/#cassandra.repositories) documentation 
-you will find all the possibilities to use and configure how the application will work with Cassandra.  
+In the [reference](https://docs.spring.io/spring-data/cassandra/docs/4.0.1/reference/html/#cassandra.repositories) documentation
+you will find all the possibilities to use and configure how the application will work with Cassandra.
 
 ```java
 import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
@@ -497,11 +445,10 @@ public class Person {
 ## The Repository
 
 The Spring will automatically create an instance of this Interface and implement it's methods.
-Everything is convention over configuration. So the method's name tell him to use the Field `email` from the `Person` entity. 
+Everything is convention over configuration. So the method's name tell him to use the Field `email` from the `Person` entity.
 
 ```java
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -512,10 +459,39 @@ public interface PersonRepository extends CrudRepository<Person, String> {
 
 ### Setup Cassandra
 
-Edit/add file: `application.yaml` in `resources` folder. 
+Followin the [reference](https://docs.spring.io/spring-data/cassandra/docs/4.0.1/reference/html/#cassandra.connectors), create the following class
+
+```java
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.cassandra.config.CqlSessionFactoryBean;
+import org.springframework.data.cassandra.repository.config.EnableCassandraRepositories;
+
+@EnableCassandraRepositories(basePackages = "com.hands.on") // Be sure that you set your package here
+@Configuration
+public class CassandraConfig {
+
+    @Bean
+    public CqlSessionFactoryBean session(@Value("${cassandra.contact-points}") String contactPoints,
+                                         @Value("${cassandra.port}") int port,
+                                         @Value("${cassandra.keyspace-name}") String keyspace,
+                                         @Value("${cassandra.local-datacenter}") String localDatacenter) {
+
+        CqlSessionFactoryBean session = new CqlSessionFactoryBean();
+        session.setContactPoints(contactPoints);
+        session.setPort(port);
+        session.setLocalDatacenter(localDatacenter);
+        session.setKeyspaceName(keyspace);
+        return session;
+    }
+}
+```
+
+Edit/add file: `application.yaml` in `resources` folder.
 
 ```yaml
-spring.data.cassandra:
+cassandra:
  contact-points: localhost
  port: 9042
  keyspace-name: mykeyspace
@@ -528,17 +504,17 @@ You can override and compose configurations using:
 * other files in classpath
 * default values in code
 
-Check the documentation [Externalized Configuration](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html). 
+Check the documentation [Externalized Configuration](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html).
 
 ## The Kafka
 
 * We are using Spring Cloud Stream that abstracts the implementation of the stream's solution.
-* So we should check the [documentation](https://cloud.spring.io/spring-cloud-static/spring-cloud-stream/2.2.1.RELEASE/home.html) 
-to know how it works and how we should configure our application.
-* Read about the [abstraction](https://cloud.spring.io/spring-cloud-static/spring-cloud-stream/2.2.1.RELEASE/spring-cloud-stream.html) 
-so we know the configuration that doesn't rely on implementation.
-* And read about the [Kafka binder](https://cloud.spring.io/spring-cloud-static/spring-cloud-stream-binder-kafka/2.2.1.RELEASE/spring-cloud-stream-binder-kafka.html) 
-which is the one that we will use.
+* So we should check the [documentation](https://docs.spring.io/spring-cloud-stream/docs/current/reference/html/)
+  to know how it works and how we should configure our application.
+* Read about the [The Binder Abstraction](https://docs.spring.io/spring-cloud-stream/docs/current/reference/html/spring-cloud-stream.html#spring-cloud-stream-overview-binder-abstraction)
+  so we know the configuration that doesn't rely on implementation.
+* And read about the [Apache Kafka Binder](https://cloud.spring.io/spring-cloud-stream-binder-kafka/spring-cloud-stream-binder-kafka.html#_apache_kafka_binder)
+  which is the one that we will use.
 
 After read about the _Kafka Binder_ we notice that we need to add this dependency:
 ```xml
@@ -550,29 +526,29 @@ After read about the _Kafka Binder_ we notice that we need to add this dependenc
 
 ### Binding our topic
 
-```java
-import org.springframework.cloud.stream.annotation.Input;
-import org.springframework.messaging.SubscribableChannel;
+Since the version 3.x the binding is automatically done trough functional programming link the name of the function and the configuration.
+So pay attention to the binding names `consume-in-0` and `produce-out-0`. The methods should have the name `consume` and `produce`.
+The `in` and `out` is to indicate if is to consume or produce. The cardinal `0` is because we can have multiple consumers and producers to the same topic.
+```yaml
 
-public interface Topics {
-
-    String INPUT = "person-in";
-    @Input(Topics.INPUT)
-    SubscribableChannel input();
-}
+spring.cloud.stream.bindings:
+  produce-out-0:
+    destination: person-topic
+    contentType: application/json
+  consume-in-0:
+    destination: person-topic
 ```
 
-Add in your main class: `@EnableBinding(Topics.class)`
-  
 ### Listen the Topic
 
 Our listener is attached to our topic and should persist the data in the Cassandra database.
 
 ```java
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.annotation.StreamListener;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+
+import java.util.function.Consumer;
 
 @Component
 public class PersonListener {
@@ -584,16 +560,43 @@ public class PersonListener {
         this.repository = repository;
     }
 
-    @StreamListener(Topics.INPUT)
-    public void handlePerson(Person person) {
-        repository.save(person);
+    // the methods name "consume" matches the "consumer-in-0" in application.yaml
+    @Bean
+    Consumer<Person> consume() { 
+        return person -> repository.save(person);
+    }
+}
+```
+
+### Producer to the topic
+
+This [documentation](https://docs.spring.io/spring-cloud-stream/docs/3.1.0/reference/html/spring-cloud-stream.html#_sending_arbitrary_data_to_an_output_e_g_foreign_event_driven_sources) shows how to produce to any topic.
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.stereotype.Component;
+ 
+@Component
+public class PersonProducer {
+
+    private StreamBridge streamBridge;
+
+    @Autowired
+    PersonProducer(StreamBridge streamBridge) {
+        this.streamBridge = streamBridge;
+    }
+
+    public boolean produce(Person person) {
+        // "produce-out-0" is the same on application.yaml
+        return this.streamBridge.send("produce-out-0", person); 
     }
 }
 ```
 
 ### Configuring our Kafka topic
 
-As you read in the related documentation you can override the default configuration and:
+As you read in the [related documentation](https://cloud.spring.io/spring-cloud-stream-binder-kafka/spring-cloud-stream-binder-kafka.html#_configuration_options) you can override the default configuration and:
 
 * set the content-type of the message in the topic
 * the topic name
@@ -605,24 +608,21 @@ As you read in the related documentation you can override the default configurat
 You only need to add a new file in the resources folder: `application.yaml` or edit the `application.properties`.
 
 ```yaml
-spring.cloud.stream.kafka.binder:
-  brokers: localhost
-  defaultBrokerPort: 9092
-  configuration.commit.interval.ms: 1000
-  requiredAcks: 1
-  autoCreateTopics: true
-  autoAddPartitions: true
-spring.cloud.stream.bindings.person-in:
-  destination: person-topic
-  group: handsonapp
-  contentType: application/json
-  consumer:
-    partitioned: true
-    concurrency: 2
-    autoRebalanceEnabled: true
-    autoCommitOffset: true
-    startOffset: earliest
-    max-attempts: 3
+spring.cloud.stream.bindings:
+  produce-out-0:
+    destination: person-topic
+    contentType: application/json
+  consume-in-0:
+    destination: person-topic
+    group: handsonapp
+    contentType: application/json
+    consumer:
+      partitioned: true
+      concurrency: 2
+      autoRebalanceEnabled: true
+      autoCommitOffset: true
+      startOffset: earliest
+      max-attempts: 3
 ``` 
 
 The contentType `application/json` will serialize the object using an instance of `ObjectMapper` to JSON.
@@ -631,11 +631,7 @@ The contentType `application/json` will serialize the object using an instance o
 
 ```java
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -645,40 +641,37 @@ import java.util.Map;
 @RequestMapping("/api")
 public class ApiController {
 
-    private MessageChannel messageChannel;
+    private PersonProducer personProducer;
     private PersonRepository repository;
 
     @Autowired
-    public ApiController(@Qualifier(Topics.INPUT) MessageChannel messageChannel,
-                         PersonRepository repository
+    public ApiController(PersonProducer personProducer,
+                        PersonRepository repository
     ) {
-        this.messageChannel = messageChannel;
+        this.personProducer = personProducer;
         this.repository = repository;
     }
 
     @RequestMapping(path = "/person", method = RequestMethod.POST)
     public ResponseEntity<?> insert(@RequestBody Person person) {
-        Message<Person> message =  MessageBuilder.withPayload(person).build();
-        boolean isSuccess = this.messageChannel.send(message);
-        if(isSuccess) {
-            return ResponseEntity.noContent().build();
-        }
-        else {
+        boolean isSuccess = personProducer.produce(person);
+        if(!isSuccess) {
             Map json = new HashMap<>();
             json.put("errorMessage", "fail to publish Person in topic");
-            return ResponseEntity.unprocessableEntity().body(json);
+            return ResponseEntity.internalServerError().body(json);
         }
+        return ResponseEntity.noContent().build();
     }
 
     @RequestMapping(path = "/person", method = RequestMethod.GET)
     public ResponseEntity<?> get(@RequestParam(required = true) String email) {
-         Person person = this.repository.findByEmail(email);
-         if(person != null) {
-             return ResponseEntity.ok(person);
-         }
-         else {
-             return ResponseEntity.notFound().build();
-         }
+        Person person = this.repository.findByEmail(email);
+        if(person != null) {
+            return ResponseEntity.ok(person);
+        }
+        else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
 ```
@@ -696,149 +689,167 @@ Your application is like a BOX and you only deal with the input and output. In o
 
 The test is about the piece inside your application, you are going to test in method level, looking:
 * Input and output of the method
-* Or behaviour, if the method calls the service, repository with the expected parameters. 
+* Or behaviour, if the method calls the service, repository with the expected parameters.
+
+We are going to use JUnit 5 to run our tests. You can read the [User Guide](https://junit.org/junit5/docs/current/user-guide).
 
 ## Unit tests with Mockito
 
 Notes:
-* Try to avoid running with Spring Context, run with Junit instead: `@RunWith(JUnit4.class)`
+* Try to avoid running with Spring Context, run only with Junit instead
 * With Mockito we can: verify expectations, capture arguments or return something
 * Instantiate your class and mock dependencies
 * Use constructor to know all dependencies
 
 ```java
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hands.on.controller.ApiController;
-import com.hands.on.model.Person;
-import com.hands.on.repository.PersonRepository;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
-@RunWith(JUnit4.class)
 public class ApiControllerUnitTest {
 
- private ApiController apiController;
- private MessageChannel messageChannel;
- private PersonRepository personRepository;
- private ObjectMapper objectMapper = new ObjectMapper();
+    private ApiController apiController;
+    private PersonProducer personProducer;
+    private PersonRepository personRepository;
+    private ObjectMapper objectMapper = new ObjectMapper();
 
- @Before
- public void initMocks() {
-  this.messageChannel = Mockito.mock(MessageChannel.class);
-  this.personRepository = Mockito.mock(PersonRepository.class);
-  this.apiController = new ApiController(this.messageChannel, this.personRepository);
- }
+    @BeforeEach
+    public void initMocks() {
+        this.personProducer = Mockito.mock(PersonProducer.class);
+        this.personRepository = Mockito.mock(PersonRepository.class);
+        this.apiController = new ApiController(this.personProducer, this.personRepository);
+    }
 
- @Test
- public void getPerson() throws Exception {
-  String email = "john.doe@company.com";
+    @Test
+    public void getPerson() throws Exception {
+        String email =    "john.doe@company.com";
 
-  // Act
-  ResponseEntity responseEntity = this.apiController.get(email);
+        // Act
+        ResponseEntity responseEntity = this.apiController.get(email);
 
-  // Assert
-  Assert.assertNotNull(responseEntity);
-  Assert.assertEquals(404, responseEntity.getStatusCodeValue());
-  Mockito.verify(this.personRepository, Mockito.times(1)).findByEmail(eq(email));
-  Mockito.verifyNoMoreInteractions(this.personRepository);
-  Mockito.verifyNoMoreInteractions(this.messageChannel);
- }
+        // Assert
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(404, responseEntity.getStatusCodeValue());
+        Mockito.verify(this.personRepository, Mockito.times(1)).findByEmail(eq(email));
+        Mockito.verifyNoMoreInteractions(this.personRepository);
+        Mockito.verifyNoMoreInteractions(this.personProducer);
+    }
 
- @Test
- public void postPerson() throws Exception {
+    @Test
+    public void postPerson() throws Exception {
 
-  String email = "john.doe@company.com";
-  String json = "{\"email\": \""+email+"\", \"firstName\": \"Edsger\", \"lastName\": \"Dijkstra\", \"yearBirth\": 1930 }";
-  Person person = this.objectMapper.readValue(json, Person.class);
+        String email = "john.doe@company.com";
+        String json = "{\"email\": \""+email+"\", \"firstName\": \"Edsger\", \"lastName\": \"Dijkstra\", \"yearBirth\": 1930 }";
+        Person person = this.objectMapper.readValue(json, Person.class);
 
-  Mockito.when(this.messageChannel.send(any(Message.class))).thenReturn(true);
+        Mockito.when(this.personProducer.produce(any(Person.class))).thenReturn(true);
 
-  // Act
-  ResponseEntity responseEntity = this.apiController.insert(person);
+        // Act
+        ResponseEntity responseEntity = this.apiController.insert(person);
 
-  // Assert
-  Assert.assertNotNull(responseEntity);
-  Assert.assertEquals(204, responseEntity.getStatusCodeValue());
-  ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
-  Mockito.verify(this.messageChannel, Mockito.times(1)).send(captor.capture());
-  Mockito.verifyNoMoreInteractions(this.messageChannel);
-  Mockito.verifyNoMoreInteractions(this.personRepository);
+        // Assert
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(204, responseEntity.getStatusCodeValue());
+        ArgumentCaptor<Person> captor = ArgumentCaptor.forClass(Person.class);
+        Mockito.verify(this.personProducer, Mockito.times(1)).produce(captor.capture());
+        Mockito.verifyNoMoreInteractions(this.personProducer);
+        Mockito.verifyNoMoreInteractions(this.personRepository);
 
-  Message message = captor.getValue();
-  Person personInPayload = (Person) message.getPayload();
-  Assert.assertEquals(person, personInPayload); // Only will work if we implements the method Equals in class Person
-  JSONAssert.assertEquals(json, this.objectMapper.writeValueAsString(personInPayload), true);
- }
+        Person personInPayload = captor.getValue();
+        Assertions.assertEquals(person, personInPayload); // Only will work if we implement the method Equals in class Person
+        JSONAssert.assertEquals(json, this.objectMapper.writeValueAsString(personInPayload), true);
+    }
+
+    @Test
+    public void postPersonWhenFailsToProduce() throws Exception {
+
+        String email = "john.doe@company.com";
+        String json = "{\"email\": \""+email+"\", \"firstName\": \"Edsger\", \"lastName\": \"Dijkstra\", \"yearBirth\": 1930 }";
+        Person person = this.objectMapper.readValue(json, Person.class);
+
+        Mockito.when(this.personProducer.produce(any(Person.class))).thenReturn(false);
+
+        // Act
+        ResponseEntity responseEntity = this.apiController.insert(person);
+
+        // Assert
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(500, responseEntity.getStatusCodeValue());
+        Mockito.verify(this.personProducer, Mockito.times(1)).produce(any(Person.class));
+        Mockito.verifyNoMoreInteractions(this.personProducer);
+        Mockito.verifyNoMoreInteractions(this.personRepository);
+    }
 }
+
 ```
 
 ## Prepare Integration Tests
 
 ### Cassandra
 
-Add a file `test/resources/cassandra-test.yaml` based on the file provided by [Cassandra Unit - cassandra-test.yaml](https://github.com/jsevellec/cassandra-unit/blob/master/cassandra-unit/src/main/resources/cu-cassandra.yaml)
-In the documentation of [Cassandra Unit](https://github.com/jsevellec/cassandra-unit/wiki/Spring-for-Cassandra-unit) you have a lot of options to use. 
+We are going to run the Integration Tests    "against" the docker instance of Cassandra.
 
-
-Edit the port to avoid conflict with cassandra locally:
-```yaml
-native_transport_port: 9242
+Add a file `test/resources/application-test.properties` to setup the connection with the cassandra:
+```properties
+cassandra.contact-points=localhost
+cassandra.port=9042
+cassandra.local-datacenter=datacenter1
 ```
 
-Add a file `test/resources/application-test.properties` to setup the connection with the cassandra-unit:
-```properties
-spring.data.cassandra.contact-points=localhost
-spring.data.cassandra.port=9242
-spring.data.cassandra.jmx-enabled=false
+### Helpful dependencies for test
+
+Add to the `pom.xml`:
+
+```xml
+<!-- Has the FileUtils, help us to load Files -->
+<dependency>
+    <groupId>org.apache.ant</groupId>
+    <artifactId>ant</artifactId>
+    <version>1.10.13</version>
+    <scope>test</scope>
+</dependency>
 ```
 
 ### Integration test for Controller
 
-* Start Embedded Cassandra with `@BeforeClass`
-* Stop Embedded Cassandra with `@AfterClass`
+* Start connection with Cassandra using `@BeforeTestClass`
+* Stop connection with Cassandra using `@AfterTestClass`
 * `@SpringBootTest` to boot application
 * `@TestPropertySource` to override configuration for tests
 * `@AutoConfigureMockMvc` and `MockMvc` to perform HTTP operations
-* You can use other options to start the EmbeddedCassandra 
 
 ```java
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.tools.ant.util.FileUtils;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
+import org.springframework.cloud.stream.binder.test.InputDestination;
+import org.springframework.cloud.stream.binder.test.TestChannelBinderConfiguration;
+import org.springframework.context.annotation.Import;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.util.Properties;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -847,76 +858,72 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ContextConfiguration(classes = {HandsOnApplication.class}) // Replace here to put your main class
+@ContextConfiguration(classes = {HandsOnApplication.class})
 @AutoConfigureMockMvc // When application boots the test will instantiate a MockMvc
 @TestPropertySource("classpath:application-test.properties") // Override configuration only for tests
-@RunWith(SpringRunner.class)
-@SpringBootTest // The application will startup
+@ExtendWith(SpringExtension.class)
+@SpringBootTest	// The application will startup
 public class HandsOnApplicationTests {
 
-    @Autowired
-    private MockMvc mockMvc; // This object allow us to perform HTTP operations in our application
+	@Autowired
+	private MockMvc mockMvc; // This object allow us to perform HTTP operations in our application
 
-    @Autowired
-    private PersonRepository repository;
+	@Autowired
+	private PersonRepository repository;
 
-    @BeforeClass
-    public static void initCassandra() throws Exception {
-        Properties prop = new Properties();
-        prop.load(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("application-test.properties"));
-        String cassandraHosts = prop.getProperty("spring.data.cassandra.contact-points");
-        String cassandraPort = prop.getProperty("spring.data.cassandra.port");
+	@BeforeAll
+	public static void setupCassandra() throws Exception {
 
-        // Start Cassanda Unit
-        EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-test.yaml", 20000);
-        Cluster cluster = Cluster.builder()
-                .addContactPoints(cassandraHosts)
-                .withPort(Integer.parseInt(cassandraPort))
-                .withoutJMXReporting()
-                .build();
-        // Connect and execute CQL Script
-        Session session = cluster.connect();
+		// Connect to Cassandra
+		Properties prop = new Properties();
+		prop.load(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("application-test.properties"));
+		String contactPoints = prop.getProperty("cassandra.contact-points");
+		int port = Integer.parseInt(prop.getProperty("cassandra.port"));
+		String localDatacenter = prop.getProperty("cassandra.local-datacenter");
 
-        // CQL to create Keyspace
-        String cqlScript1 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_keyspace.cql")));
-        session.execute(cqlScript1);
-    
-        // CQL to create table
-        String cqlScript2 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_table.cql")));
-        session.execute(cqlScript2);
-    }
+		CqlSession session = CqlSession.builder()
+				.addContactPoint(new InetSocketAddress(contactPoints, port))
+				.withLocalDatacenter(localDatacenter)
+				.build();
 
-    @AfterClass
-    public static void cleanCassandra() throws Exception {
-        EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
-    }
+		// Create resources at Database
+		String cqlScript1 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_keyspace.cql")));
+		session.execute(cqlScript1);
+		String cqlScript2 = FileUtils.readFully(new InputStreamReader(HandsOnApplicationTests.class.getClassLoader().getResourceAsStream("cqls/create_table.cql")));
+		session.execute(cqlScript2);
 
-    @Test
-    public void postAndGetPerson() throws Exception {
+		session.close();
+	}
 
-        // Prepare
-        String email = "jhon.doe@company.com";
-        Person p = new Person();
-        p.setEmail(email);
-        this.repository.delete(p);
 
-        String contentToPost = "{\"email\": \""+email+"\", \"firstName\": \"Jhon\", \"lastName\": \"Doe\", \"yearBirth\": 1975 }";
+	@Test
+	public void postAndGetPerson() throws Exception {
 
-        // Act/Assert - POST
-        MvcResult mvcResult = this.mockMvc.perform(post("/api/person")
-                .content(contentToPost).contentType("application/json"))
-                .andDo(print())
-                .andExpect(status().isNoContent()).andReturn();
+		// Prepare
+		String email = "edsger.dijkstra@company.com";
+		Person p = new Person();
+		p.setEmail(email);
+		this.repository.delete(p);
 
-        // Act/Assert - GET
-        mvcResult = this.mockMvc.perform(get("/api/person")
-                .param("email", email)
-                .accept("application/json"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(content().json(contentToPost, true))
-                .andReturn();
-    }
+		String contentToPost = "{\"email\": \""+email+"\", \"firstName\": \"Edsger\", \"lastName\": \"Dijkstra\", \"yearBirth\": 1930 }";
+
+		// Act/Assert - POST
+		MvcResult mvcResult = this.mockMvc.perform(post("/api/person")
+						.content(contentToPost).contentType("application/json"))
+				.andDo(print())
+				.andExpect(status().isNoContent()).andReturn();
+
+		Thread.sleep(2000);
+
+		// Act/Assert - GET
+		mvcResult = this.mockMvc.perform(get("/api/person")
+						.param("email", email)
+						.accept("application/json"))
+				.andDo(print())
+				.andExpect(status().isOk())
+				.andExpect(content().json(contentToPost, true))
+				.andReturn();
+	}
 }
 ```
 
@@ -924,38 +931,77 @@ public class HandsOnApplicationTests {
 
 Imagine that our topic is public and other applications can publish to it. So our application should persist the data too.
 
+Reference: https://docs.spring.io/spring-cloud-stream/docs/current/reference/html/spring-cloud-stream.html#_testing
+
+Add to the `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-stream</artifactId>
+    <version>4.0.0-M5</version>
+    <type>test-jar</type>
+    <scope>test</scope>
+    <classifier>test-binder</classifier>
+</dependency>
+```
+
 ```java
+@Import(TestChannelBinderConfiguration.class) // Enable kafka binder for test
 public class HandsOnApplicationTests {
-    // ...
+ // ...
 
-    @Autowired
-    @Qualifier(Topics.INPUT)
-    private MessageChannel messageChannel;
+	/* Tests for Kafka */
+	@Autowired
+	private InputDestination input; // it's a kind of    "mock" for the topics
 
-    @Autowired
-    private ObjectMapper objectMapper; // The default instance created by Spring
+	@Autowired
+	private PersonProducer personProducer;
 
-    @Test
-    public void publishMessageToChannelAndCheckRepository() throws Exception {
+	@Autowired
+	private ObjectMapper objectMapper; // The default instance created by Spring
 
-        // Prepare
-        String email = "james.watt@company.com";
-        Person p = new Person();
-        p.setEmail(email);
-        this.repository.delete(p);
+	@Test
+	public void publishMessageToTopicAndCheckRepository() throws Exception {
 
-        String json = "{\"email\": \""+email+"\", \"firstName\": \"James\", \"lastName\": \"Watt\", \"yearBirth\": 1736 }";
-        Message<String> message =  MessageBuilder.withPayload(json).build();
+		// Prepare
+		String email = "james.watt@company.com";
+		Person p = new Person();
+		p.setEmail(email);
+		this.repository.delete(p);
 
-        // Act
-        this.messageChannel.send(message);
+		String json = "{\"email\": \""+email+"\", \"firstName\": \"James\", \"lastName\": \"Watt\", \"yearBirth\": 1736 }";
 
-        // Assert
-        Person person = this.repository.findByEmail(email);
-        Assert.assertNotNull(person);
-        String jsonFromRepository = this.objectMapper.writeValueAsString(person);
-        JSONAssert.assertEquals(json, jsonFromRepository, true);
-    }
+		// Act
+		this.input.send(MessageBuilder.withPayload(json).build(),"person-topic");
+
+		// Assert
+		Person person = this.repository.findByEmail(email);
+		Assertions.assertNotNull(person);
+		String jsonFromRepository = this.objectMapper.writeValueAsString(person);
+		JSONAssert.assertEquals(json, jsonFromRepository, true);
+	}
+
+	@Test
+	public void produceMessageAndCheckRepository() throws Exception {
+
+		// Prepare
+		Person person = new Person();
+		person.setEmail("john.doe@acme.com");
+		person.setFirstName("John");
+		person.setLastName("Doe");
+		person.setYearBirth(2023);
+
+		this.repository.delete(person);
+
+		// Act
+		this.personProducer.produce(person);
+
+		// Assert
+		Person findPerson = this.repository.findByEmail(person.getEmail());
+		Assertions.assertNotNull(findPerson);
+		Assertions.assertEquals(person, findPerson);
+	}
 }
 ```
 ___
@@ -963,13 +1009,13 @@ ___
 # Pack, Deliver and Run
 
 1. `mvn clean package`
-1. `java -jar target\hands-on-0.0.1-SNAPSHOT.jar`
-1. Check if application booted in: `http://localhost:8080/actuator/info` , should return HTTP 200 with a JSON.
+1. `java -jar target/hands-on-0.0.1-SNAPSHOT.jar`
+1. Check if application booted in: `http://localhost:8080/actuator/info` , should return HTTP 2xx.
 1. You can access the Swagger Documentation `http://localhost:8080/swagger-ui/index.html`
 1. POST and GET a sample
 ```shell script
-curl -v -X POST 'http://localhost:8080/api/person' -H 'Content-Type: application/json' -d '{"email": "james.watt@gmail.com", "firstName": "James", "lastName": "Watt", "yearBirth": 1736}'
-curl -v -X GET 'http://localhost:8080/api/person?email=james.watt@gmail.com' -H 'accept: application/json'
+curl -v -X POST 'http://localhost:8080/api/person' -H 'Content-Type: application/json' -d '{"email":    "ada.lovelace@gmail.com", "firstName": "Augusta", "lastName": "King", "yearBirth": 1815}'
+curl -v -X GET 'http://localhost:8080/api/person?email=ada.lovelace@gmail.com' -H 'accept: application/json'
 ```
 
 ___
@@ -981,22 +1027,22 @@ ___
 The list here is a subset of libraries and guides useful in any project:
 
 * [Spring boot Starter Cache](https://spring.io/guides/gs/caching/): Use cache in-memory abstracting the implementation and uses annotation to cache objects.
-* [Asynchronous Methods](https://spring.io/guides/gs/async-method/): How to use spring with `@Async` annotation to work with asynchronous methods.    
+* [Asynchronous Methods](https://spring.io/guides/gs/async-method/): How to use spring with `@Async` annotation to work with asynchronous methods.
 * [Consuming a REST APIs](https://spring.io/guides/gs/consuming-rest/): How to consume REST APIs.
 * [Scheduling Tasks](https://spring.io/guides/gs/scheduling-tasks/): Schedule execution of a method using something like a `cron`.
 * [Spring Retry](https://github.com/spring-projects/spring-retry): How to use spring to retry the execution of a method in case of a specific condition (some errors).
 * [ConditionalOnProperty](https://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/autoconfigure/condition/ConditionalOnProperty.html): Instantiate spring bean conditionally.
- 
- ## Separate Unit and Integration Tests
- 
- * [How to Split JUnit Tests in a Continuous Integration Environment](https://semaphoreci.com/community/tutorials/how-to-split-junit-tests-in-a-continuous-integration-environment)
+
+## Separate Unit and Integration Tests
+
+* [How to Split JUnit Tests in a Continuous Integration Environment](https://semaphoreci.com/community/tutorials/how-to-split-junit-tests-in-a-continuous-integration-environment)
 
  ___
 
- # Do it by yourself
+# Do it by yourself
 
- * Add cache to avoid retrieving the same data from cassandra.
+* Add cache to avoid retrieving the same data from cassandra.
 
- * Force cache expiration whenever the data is updated
+* Force cache expiration whenever the data is updated
 
- * Allow to enable/disable Swagger by configuration
+* Allow to enable/disable Swagger by configuration
