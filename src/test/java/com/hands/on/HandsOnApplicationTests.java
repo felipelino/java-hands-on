@@ -125,7 +125,7 @@ public class HandsOnApplicationTests {
 		String json = "{\"email\": \""+email+"\", \"firstName\": \"James\", \"lastName\": \"Watt\", \"yearBirth\": 1736 }";
 
 		// Act
-		this.input.send(MessageBuilder.withPayload(json).build(),"person-topic");
+		this.input.send(MessageBuilder.withPayload(json).build(), "person-topic");
 
 		// Assert
 		Person person = this.repository.findByEmail(email);
