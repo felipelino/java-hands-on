@@ -933,19 +933,6 @@ Imagine that our topic is public and other applications can publish to it. So ou
 
 Reference: https://docs.spring.io/spring-cloud-stream/docs/current/reference/html/spring-cloud-stream.html#_testing
 
-Add to the `pom.xml`:
-
-```xml
-<dependency>
-    <groupId>org.springframework.cloud</groupId>
-    <artifactId>spring-cloud-stream</artifactId>
-    <version>4.0.0-M5</version>
-    <type>test-jar</type>
-    <scope>test</scope>
-    <classifier>test-binder</classifier>
-</dependency>
-```
-
 ```java
 @Import(TestChannelBinderConfiguration.class) // Enable kafka binder for test
 public class HandsOnApplicationTests {
@@ -1014,7 +1001,7 @@ ___
 1. You can access the Swagger Documentation `http://localhost:8080/swagger-ui/index.html`
 1. POST and GET a sample
 ```shell script
-curl -v -X POST 'http://localhost:8080/api/person' -H 'Content-Type: application/json' -d '{"email":    "ada.lovelace@gmail.com", "firstName": "Augusta", "lastName": "King", "yearBirth": 1815}'
+curl -v -X POST 'http://localhost:8080/api/person' -H 'Content-Type: application/json' -d '{"email": "ada.lovelace@gmail.com", "firstName": "Augusta", "lastName": "King", "yearBirth": 1815}'
 curl -v -X GET 'http://localhost:8080/api/person?email=ada.lovelace@gmail.com' -H 'accept: application/json'
 ```
 
